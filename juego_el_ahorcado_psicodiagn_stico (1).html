@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ahorcado Psicodiagnóstico - UCES</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif'],
+                    },
+                    colors: {
+                        uces: {
+                            50: '#f0fdf4',
+                            100: '#dcfce7',
+                            500: '#22c55e',
+                            700: '#15803d',
+                            800: '#166534',
+                            900: '#14532d',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .key-btn {
+            transition: all 0.15s ease;
+        }
+        .key-btn:active:not(:disabled) {
+            transform: scale(0.92);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans flex flex-col justify-between selection:bg-uces-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="bg-slate-800/80 backdrop-blur-md border-b border-slate-700/60 sticky top-0 z-30">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-uces-700 text-white p-2.5 rounded-xl shadow-lg shadow-uces-900/30">
+                    <i class="fa-solid fa-brain text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-bold text-lg md:text-xl text-white tracking-wide">Desafío Psicodiagnóstico</h1>
+                    <p class="text-xs text-slate-400">T. y T. de Exploración y Diagnóstico II • UCES</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button onclick="toggleGlossaryModal()" class="bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-600/60 flex items-center gap-2 transition">
+                    <i class="fa-solid fa-book-open text-uces-500"></i>
+                    <span class="hidden sm:inline">Solucionario / Respuestas</span>
+                </button>
+                <button onclick="restartFullGame()" class="bg-slate-700/80 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg border border-slate-600/60 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-rotate-right text-amber-400"></i>
+                    <span class="hidden sm:inline">Reiniciar</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-5xl mx-auto px-4 py-6 w-full flex-grow flex flex-col justify-center">
+
+        <!-- Scoreboard Bar -->
+        <div class="grid grid-cols-3 gap-3 mb-6 bg-slate-800/50 p-3 rounded-2xl border border-slate-700/50 max-w-2xl mx-auto w-full">
+            <div class="text-center border-r border-slate-700/50">
+                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Progreso</p>
+                <p class="font-display font-extrabold text-lg text-white" id="progressText">1 / 12</p>
+            </div>
+            <div class="text-center border-r border-slate-700/50">
+                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Puntuación</p>
+                <p class="font-display font-extrabold text-lg text-uces-500" id="scoreText">0 pts</p>
+            </div>
+            <div class="text-center">
+                <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Racha Actual</p>
+                <p class="font-display font-extrabold text-lg text-amber-400" id="streakText">🔥 0</p>
+            </div>
+        </div>
+
+        <!-- Main Game Board Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch max-w-4xl mx-auto w-full">
+
+            <!-- Hangman Visual Canvas -->
+            <div class="lg:col-span-5 bg-slate-800/80 border border-slate-700/70 rounded-3xl p-5 flex flex-col items-center justify-between shadow-xl">
+                <div class="w-full flex justify-between items-center mb-2">
+                    <span id="livesBadge" class="text-xs font-bold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1.5">
+                        <i class="fa-solid fa-heart"></i> <span id="livesText">6/6 Vidas</span>
+                    </span>
+                    <button onclick="requestHint()" id="hintBtn" class="text-xs font-semibold text-amber-400 hover:text-amber-300 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1 rounded-full transition flex items-center gap-1">
+                        <i class="fa-solid fa-lightbulb"></i> Pista Extra
+                    </button>
+                </div>
+
+                <!-- Hangman SVG Illustration -->
+                <div class="relative w-48 h-48 my-2 flex items-center justify-center">
+                    <svg class="w-full h-full text-slate-300" viewBox="0 0 200 200">
+                        <!-- Horca / Base -->
+                        <line x1="20" y1="180" x2="180" y2="180" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+                        <line x1="50" y1="180" x2="50" y2="20" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+                        <line x1="47" y1="20" x2="130" y2="20" stroke="#475569" stroke-width="6" stroke-linecap="round" />
+                        <line x1="50" y1="50" x2="80" y2="20" stroke="#475569" stroke-width="4" />
+                        <line x1="130" y1="20" x2="130" y2="45" stroke="#f59e0b" stroke-width="3" stroke-dasharray="3 2" />
+
+                        <!-- Cabeza (Error 1) -->
+                        <circle id="part-head" cx="130" cy="62" r="16" stroke="#ef4444" stroke-width="4" fill="#1e293b" class="hidden" />
+                        <!-- Cuerpo (Error 2) -->
+                        <line id="part-body" x1="130" y1="78" x2="130" y2="120" stroke="#ef4444" stroke-width="4" stroke-linecap="round" class="hidden" />
+                        <!-- Brazo Izquierdo (Error 3) -->
+                        <line id="part-armL" x1="130" y1="90" x2="105" y2="105" stroke="#ef4444" stroke-width="4" stroke-linecap="round" class="hidden" />
+                        <!-- Brazo Derecho (Error 4) -->
+                        <line id="part-armR" x1="130" y1="90" x2="155" y2="105" stroke="#ef4444" stroke-width="4" stroke-linecap="round" class="hidden" />
+                        <!-- Pierna Izquierda (Error 5) -->
+                        <line id="part-legL" x1="130" y1="120" x2="110" y2="155" stroke="#ef4444" stroke-width="4" stroke-linecap="round" class="hidden" />
+                        <!-- Pierna Derecha (Error 6) -->
+                        <line id="part-legR" x1="130" y1="120" x2="150" y2="155" stroke="#ef4444" stroke-width="4" stroke-linecap="round" class="hidden" />
+                    </svg>
+                </div>
+
+                <!-- Category / Topic Tag -->
+                <div class="w-full text-center">
+                    <span id="topicTag" class="text-[11px] font-bold tracking-wider uppercase bg-slate-700/80 text-slate-300 px-3 py-1 rounded-md border border-slate-600/50">
+                        Concepto Clave
+                    </span>
+                </div>
+            </div>
+
+            <!-- Word Display & Keyboard -->
+            <div class="lg:col-span-7 bg-slate-800/80 border border-slate-700/70 rounded-3xl p-5 flex flex-col justify-between shadow-xl">
+                
+                <!-- Clue / Definition Prompt -->
+                <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-700/50 mb-4 min-h-[90px] flex flex-col justify-center">
+                    <p class="text-xs font-bold text-uces-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-quote-left"></i> Pista Teórica
+                    </p>
+                    <p id="clueText" class="text-sm md:text-base text-slate-200 leading-relaxed font-medium">
+                        Cargando consigna...
+                    </p>
+                </div>
+
+                <!-- Word Letters Slot Container -->
+                <div class="my-4 py-3 flex flex-wrap justify-center items-center gap-2 min-h-[70px]" id="wordContainer">
+                    <!-- Word spaces rendered via JS -->
+                </div>
+
+                <!-- Keyboard -->
+                <div class="mt-2">
+                    <div id="keyboardContainer" class="flex flex-col gap-1.5 max-w-lg mx-auto">
+                        <!-- Keys rendered via JS -->
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-3 text-center text-xs text-slate-500">
+        UCES - Técnicas de Exploración y Diagnóstico II • Material Didáctico Interactivo
+    </footer>
+
+    <!-- Word Completed / Explanation Modal -->
+    <div id="explanationModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl max-w-lg w-full p-6 shadow-2xl transform transition-all">
+            <div class="text-center mb-4">
+                <div id="modalIconContainer" class="w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3 shadow-lg">
+                    <i id="modalIcon" class="fa-solid fa-check"></i>
+                </div>
+                <h3 id="modalTitle" class="font-display font-bold text-2xl text-white">¡Excelente!</h3>
+                <p id="modalSubtitle" class="text-xs text-slate-400 mt-1">Has adivinado el concepto correctamente</p>
+            </div>
+
+            <!-- Core Concept Explanation Box -->
+            <div class="bg-slate-900/80 rounded-2xl p-4 border border-slate-700/80 mb-5">
+                <div class="flex justify-between items-center mb-2 pb-2 border-b border-slate-800">
+                    <span id="modalWord" class="font-display font-extrabold text-lg text-uces-500 tracking-wider">CONCEPTO</span>
+                    <span id="modalCategory" class="text-[10px] uppercase font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Tema</span>
+                </div>
+                <p id="modalExplanation" class="text-xs md:text-sm text-slate-300 leading-relaxed font-normal">
+                    Explicación fundamentada...
+                </p>
+            </div>
+
+            <button onclick="nextWord()" class="w-full bg-uces-700 hover:bg-uces-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-uces-900/40 transition flex items-center justify-center gap-2">
+                <span>Siguiente Palabra</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Full Game Finished Modal -->
+    <div id="gameOverModal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl">
+            <div class="w-16 h-16 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-2xl mx-auto flex items-center justify-center text-3xl mb-4 shadow-lg">
+                <i class="fa-solid fa-trophy"></i>
+            </div>
+            <h2 class="font-display font-extrabold text-2xl text-white">¡Juego Completado!</h2>
+            <p class="text-xs text-slate-400 mt-1 mb-5">Has repasado los conceptos centrales del Psicodiagnóstico (Unidades 1 y 2)</p>
+
+            <div class="bg-slate-900/80 p-4 rounded-2xl border border-slate-700/70 mb-6 space-y-2 text-left">
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-400">Puntuación Final:</span>
+                    <span id="finalScore" class="font-bold text-uces-500 text-base">0 pts</span>
+                </div>
+                <div class="flex justify-between items-center text-sm">
+                    <span class="text-slate-400">Aciertos:</span>
+                    <span id="finalAccuracy" class="font-bold text-white">12 / 12</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2.5">
+                <button onclick="toggleGlossaryModal()" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-semibold py-2.5 px-4 rounded-xl transition flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-book-open text-uces-500"></i>
+                    <span>Revisar Solucionario Completo</span>
+                </button>
+                <button onclick="restartFullGame()" class="w-full bg-uces-700 hover:bg-uces-800 text-white font-bold py-3 px-4 rounded-xl shadow-lg transition text-sm">
+                    ¡Volver a Jugar!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Glossary / Answer Key Modal -->
+    <div id="glossaryModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+            <!-- Modal Header -->
+            <div class="p-5 border-b border-slate-700/80 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="bg-uces-700/20 text-uces-500 p-2 rounded-lg border border-uces-500/30">
+                        <i class="fa-solid fa-list-check text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-display font-bold text-lg text-white">Solucionario y Validación de Conceptos</h3>
+                        <p class="text-xs text-slate-400">Conceptos evaluados según el material de clase (Unidades 1 y 2)</p>
+                    </div>
+                </div>
+                <button onclick="toggleGlossaryModal()" class="text-slate-400 hover:text-white p-2 rounded-lg transition">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body Scrollable -->
+            <div id="glossaryList" class="p-5 overflow-y-auto space-y-4 custom-scrollbar flex-grow">
+                <!-- Populated via JS -->
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="p-4 border-t border-slate-700/80 bg-slate-800/80 rounded-b-3xl text-right">
+                <button onclick="toggleGlossaryModal()" class="bg-slate-700 hover:bg-slate-600 text-white font-semibold text-xs px-4 py-2 rounded-xl transition">
+                    Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- JS Game Logic -->
+    <script>
+        // Database of concepts extracted directly from the PDF "Clase Introduccion Psicodiagnostico - 2026 (1).pptx.pdf"
+        const gameWords = [
+            {
+                word: "PERSONALIDAD",
+                category: "Unidad 1 - Concepto General",
+                clue: "Organización única e idiosincrática de cada sujeto. Constructo teórico holístico e inferible a partir de la conducta.",
+                explanation: "La personalidad es un constructo teórico no directamente observable que sintetiza afectos, pensamientos y acciones en una trama vincular e intersubjetiva."
+            },
+            {
+                word: "PROYECCION",
+                category: "Unidad 1 - Proceso Proyectivo",
+                clue: "Proceso por el cual el sujeto otorga sentido u orden a estímulos ambiguos basándose en sus necesidades y emociones (Zubin).",
+                explanation: "Según Zubin (1965), la proyección inicia en la percepción consciente y añade asociaciones de ideas, imágenes y fantasías propias del sujeto ante estímulos ambiguos."
+            },
+            {
+                word: "IDIOGRAFICO",
+                category: "Unidad 1 - Enfoques Teóricos",
+                clue: "Enfoque que estudia la realidad subjetiva, profunda y la personalidad como una organización global y única.",
+                explanation: "El enfoque idiográfico se centra en el estudio intensivo del sujeto en su singularidad, a diferencia del enfoque nomotético que busca leyes generales."
+            },
+            {
+                word: "NOMOTETICO",
+                category: "Unidad 1 - Enfoques Teóricos",
+                clue: "Enfoque que busca la descripción del comportamiento general mediante leyes de la conducta y método experimental.",
+                explanation: "El enfoque nomotético intenta establecer principios universales del comportamiento aplicables a grupos poblacionales mediante métodos cuantitativos."
+            },
+            {
+                word: "RECURRENCIAS",
+                category: "Unidad 2 - Análisis de Datos",
+                clue: "Reiteración de un mismo indicador expresado en varias zonas de un gráfico o en distintas técnicas del proceso.",
+                explanation: "Las recurrencias señalan patrones constantes en la personalidad al repetirse el mismo indicador a lo largo de la batería diagnóstica."
+            },
+            {
+                word: "CONVERGENCIAS",
+                category: "Unidad 2 - Análisis de Datos",
+                clue: "Reiteración de una secuencia dinámica mediante indicadores disímiles u opuestos que expresan un conflicto psíquico.",
+                explanation: "Las convergencias muestran los términos de un conflicto psíquico y sus defensas a través de indicadores formalmente distintos u opuestos."
+            },
+            {
+                word: "ABDUCTIVO",
+                category: "Unidad 2 - Método Clínico",
+                clue: "Método de inferencia que relaciona dialécticamente la teoría con los observables para generar hipótesis verosímiles.",
+                explanation: "El método abductivo en psicodiagnóstico permite formular hipótesis presuntivas novedosas y singulares a partir de los datos empíricos observados."
+            },
+            {
+                word: "ENCUADRE",
+                category: "Unidad 2 - Proceso Diagnóstico",
+                clue: "Establece constantes (roles, tiempo, lugar, objetivos) y variables adaptables para dotar de rigor científico al proceso.",
+                explanation: "El encuadre fija el marco operacional constante del psicodiagnóstico, permitiendo aislar variables y dar confiabilidad a la evaluación."
+            },
+            {
+                word: "INCONSCIENTE",
+                category: "Unidad 1 - Modelo Psicoanalítico",
+                clue: "Instancia psíquica de la primera tópica freudiana regida por el proceso primario (desplazamiento y condensación).",
+                explanation: "En la primera tópica freudiana, el Inconsciente funciona bajo el proceso primario, mientras que el Preconsciente-Consciente lo hace bajo el proceso secundario."
+            },
+            {
+                word: "INDICADOR",
+                category: "Unidad 2 - Transformación de Datos",
+                clue: "Dato empírico o pauta gráfica/verbal que se transforma en signo significativo para la teoría psicológica.",
+                explanation: "En la evaluación, la conducta observada se transforma primero en 'Indicador de prueba' y luego en 'Signo o Indicador Psicológico'."
+            },
+            {
+                word: "DISOCIACION",
+                category: "Unidad 2 - Perfil del Evaluador",
+                clue: "Actitud instrumental necesaria en el psicólogo para mantener la distancia óptima y no perder la objetividad clínica.",
+                explanation: "La Disociación Instrumental es la capacidad técnica del evaluador para empatizar con el sujeto mientras mantiene la distancia crítica objetiva."
+            },
+            {
+                word: "BANDA ANCHA",
+                category: "Unidad 1 - Técnicas Proyectivas",
+                clue: "Característica de los instrumentos proyectivos por su baja estructuración, permitiendo obtener amplia información.",
+                explanation: "Al presentar estímulos ambiguos o semi-ambiguos con pocas pautas culturales, las técnicas proyectivas ofrecen datos de 'banda ancha' sobre la personalidad."
+            }
+        ];
+
+        // Game State Variables
+        let currentIndex = 0;
+        let currentWordObj = null;
+        let guessedLetters = new Set();
+        let wrongLetters = [];
+        let maxErrors = 6;
+        let score = 0;
+        let streak = 0;
+        let isCurrentWordWon = false;
+
+        // SVG Hangman Parts Mapping
+        const hangmanParts = ["part-head", "part-body", "part-armL", "part-armR", "part-legL", "part-legR"];
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            initGame();
+            renderGlossary();
+            setupKeyboardListener();
+        });
+
+        function initGame() {
+            currentIndex = 0;
+            score = 0;
+            streak = 0;
+            updateScoreboard();
+            loadWord(currentIndex);
+        }
+
+        function loadWord(index) {
+            if (index >= gameWords.length) {
+                showGameOverModal();
+                return;
+            }
+
+            currentWordObj = gameWords[index];
+            guessedLetters.clear();
+            wrongLetters = [];
+            isCurrentWordWon = false;
+
+            // Update UI elements
+            document.getElementById("progressText").innerText = `${index + 1} / ${gameWords.length}`;
+            document.getElementById("clueText").innerText = currentWordObj.clue;
+            document.getElementById("topicTag").innerText = currentWordObj.category;
+            document.getElementById("hintBtn").disabled = false;
+            document.getElementById("hintBtn").classList.remove("opacity-50", "cursor-not-allowed");
+
+            resetHangmanVisual();
+            renderWordSlots();
+            renderKeyboard();
+            updateLivesUI();
+        }
+
+        function resetHangmanVisual() {
+            hangmanParts.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add("hidden");
+            });
+        }
+
+        function updateHangmanVisual() {
+            const errorCount = wrongLetters.length;
+            for (let i = 0; i < errorCount && i < hangmanParts.length; i++) {
+                const el = document.getElementById(hangmanParts[i]);
+                if (el) el.classList.remove("hidden");
+            }
+        }
+
+        function renderWordSlots() {
+            const container = document.getElementById("wordContainer");
+            container.innerHTML = "";
+
+            const target = currentWordObj.word;
+            for (let char of target) {
+                const slot = document.createElement("div");
+                slot.className = "w-9 h-11 sm:w-11 sm:h-13 border-b-4 border-slate-600 flex items-center justify-center font-display font-extrabold text-xl sm:text-2xl text-white uppercase transition-all duration-300";
+
+                if (guessedLetters.has(char)) {
+                    slot.innerText = char;
+                    slot.classList.replace("border-slate-600", "border-uces-500");
+                    slot.classList.add("text-uces-400", "animate-pulse");
+                } else {
+                    slot.innerText = "";
+                }
+                container.appendChild(slot);
+            }
+        }
+
+        function renderKeyboard() {
+            const container = document.getElementById("keyboardContainer");
+            container.innerHTML = "";
+
+            const rows = [
+                ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
+                ["A", "S", "D", "F", "G", "H", "J", "K", "L", "Ñ"],
+                ["Z", "X", "C", "V", "B", "N", "M"]
+            ];
+
+            rows.forEach(row => {
+                const rowDiv = document.createElement("div");
+                rowDiv.className = "flex justify-center gap-1 sm:gap-1.5";
+
+                row.forEach(letter => {
+                    const btn = document.createElement("button");
+                    btn.innerText = letter;
+                    btn.setAttribute("data-key", letter);
+                    btn.className = "key-btn flex-1 max-w-[38px] h-10 sm:h-11 rounded-lg font-bold text-xs sm:text-sm bg-slate-700 hover:bg-slate-600 text-slate-100 border border-slate-600/80 shadow-md flex items-center justify-center";
+
+                    if (guessedLetters.has(letter)) {
+                        btn.disabled = true;
+                        btn.className = "key-btn flex-1 max-w-[38px] h-10 sm:h-11 rounded-lg font-bold text-xs sm:text-sm bg-emerald-950/70 text-emerald-400 border border-emerald-600/50 cursor-not-allowed";
+                    } else if (wrongLetters.includes(letter)) {
+                        btn.disabled = true;
+                        btn.className = "key-btn flex-1 max-w-[38px] h-10 sm:h-11 rounded-lg font-bold text-xs sm:text-sm bg-rose-950/40 text-rose-500/50 border border-rose-900/30 cursor-not-allowed";
+                    } else {
+                        btn.onclick = () => handleGuess(letter);
+                    }
+
+                    rowDiv.appendChild(btn);
+                });
+                container.appendChild(rowDiv);
+            });
+        }
+
+        function handleGuess(letter) {
+            if (isCurrentWordWon || wrongLetters.length >= maxErrors || guessedLetters.has(letter) || wrongLetters.includes(letter)) {
+                return;
+            }
+
+            const target = currentWordObj.word;
+
+            if (target.includes(letter)) {
+                guessedLetters.add(letter);
+                renderWordSlots();
+                renderKeyboard();
+                checkWinCondition();
+            } else {
+                wrongLetters.push(letter);
+                updateHangmanVisual();
+                updateLivesUI();
+                renderKeyboard();
+                checkLossCondition();
+            }
+        }
+
+        function checkWinCondition() {
+            const target = currentWordObj.word;
+            const isWon = [...target].every(char => guessedLetters.has(char));
+
+            if (isWon) {
+                isCurrentWordWon = true;
+                score += 100 + (maxErrors - wrongLetters.length) * 15;
+                streak++;
+                updateScoreboard();
+                showExplanationModal(true);
+            }
+        }
+
+        function checkLossCondition() {
+            if (wrongLetters.length >= maxErrors) {
+                streak = 0;
+                updateScoreboard();
+                // Reveal complete word
+                [...currentWordObj.word].forEach(c => guessedLetters.add(c));
+                renderWordSlots();
+                showExplanationModal(false);
+            }
+        }
+
+        function updateLivesUI() {
+            const remaining = maxErrors - wrongLetters.length;
+            const livesText = document.getElementById("livesText");
+            const livesBadge = document.getElementById("livesBadge");
+
+            livesText.innerText = `${remaining}/${maxErrors} Vidas`;
+
+            if (remaining > 3) {
+                livesBadge.className = "text-xs font-bold px-3 py-1 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-full flex items-center gap-1.5";
+            } else if (remaining > 1) {
+                livesBadge.className = "text-xs font-bold px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full flex items-center gap-1.5";
+            } else {
+                livesBadge.className = "text-xs font-bold px-3 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-full flex items-center gap-1.5 animate-pulse";
+            }
+        }
+
+        function updateScoreboard() {
+            document.getElementById("scoreText").innerText = `${score} pts`;
+            document.getElementById("streakText").innerText = `🔥 ${streak}`;
+        }
+
+        function requestHint() {
+            const target = currentWordObj.word;
+            const unrevealed = [...target].filter(c => !guessedLetters.has(c));
+
+            if (unrevealed.length > 0 && wrongLetters.length < maxErrors - 1) {
+                const randomChar = unrevealed[Math.floor(Math.random() * unrevealed.length)];
+                wrongLetters.push("💡"); // Minor penalty for taking hint
+                handleGuess(randomChar);
+                document.getElementById("hintBtn").disabled = true;
+                document.getElementById("hintBtn").classList.add("opacity-50", "cursor-not-allowed");
+            }
+        }
+
+        function showExplanationModal(isSuccess) {
+            const modal = document.getElementById("explanationModal");
+            const iconContainer = document.getElementById("modalIconContainer");
+            const icon = document.getElementById("modalIcon");
+            const title = document.getElementById("modalTitle");
+            const subtitle = document.getElementById("modalSubtitle");
+
+            document.getElementById("modalWord").innerText = currentWordObj.word;
+            document.getElementById("modalCategory").innerText = currentWordObj.category;
+            document.getElementById("modalExplanation").innerText = currentWordObj.explanation;
+
+            if (isSuccess) {
+                iconContainer.className = "w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3 shadow-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+                icon.className = "fa-solid fa-check";
+                title.innerText = "¡Concepto Descifrado!";
+                subtitle.innerText = "Excelente comprensión del concepto teórico";
+            } else {
+                iconContainer.className = "w-14 h-14 rounded-2xl mx-auto flex items-center justify-center text-2xl mb-3 shadow-lg bg-rose-500/20 text-rose-400 border border-rose-500/30";
+                icon.className = "fa-solid fa-xmark";
+                title.innerText = "Agotaste las Vidas";
+                subtitle.innerText = "Repasa la definición para reforzar el concepto";
+            }
+
+            modal.classList.remove("hidden");
+        }
+
+        function nextWord() {
+            document.getElementById("explanationModal").classList.add("hidden");
+            currentIndex++;
+            loadWord(currentIndex);
+        }
+
+        function showGameOverModal() {
+            document.getElementById("finalScore").innerText = `${score} pts`;
+            document.getElementById("finalAccuracy").innerText = `${gameWords.length} Conceptos Repasados`;
+            document.getElementById("gameOverModal").classList.remove("hidden");
+        }
+
+        function restartFullGame() {
+            document.getElementById("gameOverModal").classList.add("hidden");
+            document.getElementById("explanationModal").classList.add("hidden");
+            initGame();
+        }
+
+        // Glossary / Answer Key Render
+        function renderGlossary() {
+            const list = document.getElementById("glossaryList");
+            list.innerHTML = "";
+
+            gameWords.forEach((item, idx) => {
+                const card = document.createElement("div");
+                card.className = "bg-slate-900/80 border border-slate-700/80 rounded-2xl p-4 transition hover:border-slate-600";
+                card.innerHTML = `
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-1.5">
+                        <span class="font-display font-extrabold text-base text-uces-500 tracking-wide">${idx + 1}. ${item.word}</span>
+                        <span class="text-[10px] uppercase font-bold text-slate-400 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">${item.category}</span>
+                    </div>
+                    <p class="text-xs text-slate-300 font-medium mb-2"><strong class="text-slate-400">Pista:</strong> ${item.clue}</p>
+                    <div class="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50 text-xs text-slate-300 leading-relaxed">
+                        <strong class="text-emerald-400">Fundamentación Teórica:</strong> ${item.explanation}
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        }
+
+        function toggleGlossaryModal() {
+            const modal = document.getElementById("glossaryModal");
+            modal.classList.toggle("hidden");
+        }
+
+        // Physical Keyboard listener
+        function setupKeyboardListener() {
+            window.addEventListener("keydown", (e) => {
+                if (document.getElementById("explanationModal").classList.contains("hidden") &&
+                    document.getElementById("glossaryModal").classList.contains("hidden") &&
+                    document.getElementById("gameOverModal").classList.contains("hidden")) {
+                    
+                    const key = e.key.toUpperCase();
+                    if (/^[A-ZÑ]$/.test(key)) {
+                        handleGuess(key);
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
